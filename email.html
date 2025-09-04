@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Open Tracking Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #1a202c;
+            --primary-color: #2d3748;
+            --secondary-color: #4a5568;
+            --text-color: #e2e8f0;
+            --highlight-color: #38b2ac;
+            --green-color: #48bb78;
+            --orange-color: #ed8936;
+            --red-color: #f56565;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        header p {
+            color: var(--secondary-color);
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background-color: var(--primary-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 5px solid var(--highlight-color);
+        }
+        .stat-card h3 {
+            font-size: 2.5rem;
+            margin: 0 0 0.5rem 0;
+        }
+        .stat-card p {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--secondary-color);
+            margin: 0;
+        }
+        .controls, .main-actions {
+            background-color: var(--primary-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .controls-grid {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            background-color: #000;
+            color: var(--text-color);
+            border: 1px solid var(--secondary-color);
+            border-radius: 4px;
+            padding: 1rem;
+            font-family: "Courier New", Courier, monospace;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-primary {
+            background-color: var(--highlight-color);
+            color: var(--bg-color);
+        }
+        .btn-primary:hover {
+            background-color: #2c7a7b;
+        }
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+        .btn-secondary:hover {
+            background-color: #718096;
+        }
+        .btn-danger {
+            background-color: var(--red-color);
+            color: var(--text-color);
+        }
+        .btn-danger:hover {
+            background-color: #c53030;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 0.75rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--secondary-color);
+            border-radius: 4px;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .results-table th, .results-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--secondary-color);
+        }
+        .results-table th {
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        .status-confirmed {
+            background-color: var(--green-color);
+            color: var(--bg-color);
+        }
+        .status-pending {
+            background-color: var(--orange-color);
+            color: var(--bg-color);
+        }
+        .hits-badge {
+            display: inline-block;
+            background-color: var(--red-color);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .filter-controls {
+            background-color: var(--primary-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .filter-group label {
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+        select {
+            padding: 0.5rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--secondary-color);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        select:hover {
+            border-color: var(--highlight-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Email Open Tracking Dashboard</h1>
+            <p>Classify delivery fetches vs real opens by counting pixel requests per recipient</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3 id="distinct-emails-stat">0</h3>
+                <p>Distinct Emails</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="confirmed-opens-stat">0</h3>
+                <p>Confirmed Opens</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="open-rate-stat">0%</h3>
+                <p>Open Rate</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="total-pixel-hits-stat">0</h3>
+                <p>Total Pixel Hits</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="controls-grid">
+                <label for="threshold">Threshold (hits ≥ N ⇒ opened):</label>
+                <input type="number" id="threshold" value="2" min="1">
+                <button id="apply-btn" class="button btn-primary">Apply</button>
+                <button id="clear-all-btn" class="button btn-danger">Clear All</button>
+            </div>
+        </div>
+
+        <div class="main-actions">
+            <textarea id="log-input" placeholder="Paste server logs here..."></textarea>
+            <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                <button id="parse-logs-btn" class="button btn-primary">Parse Logs</button>
+                <button id="export-csv-btn" class="button btn-secondary">Export CSV</button>
+            </div>
+        </div>
+
+        <div class="filter-controls">
+            <div class="filter-group">
+                <label for="status-filter">Filter by Status:</label>
+                <select id="status-filter">
+                    <option value="all">All</option>
+                    <option value="confirmed">Confirmed Only</option>
+                    <option value="pending">Pending Only</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="hits-sort">Sort by Total Hits:</label>
+                <select id="hits-sort">
+                    <option value="normal">Normal (Latest First)</option>
+                    <option value="asc">Ascending (Low to High)</option>
+                    <option value="desc">Descending (High to Low)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="results">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Email Address</th>
+                        <th>Status</th>
+                        <th>First Seen</th>
+                        <th>Confirmed At</th>
+                        <th>Last Seen</th>
+                        <th>Total Hits</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="results-tbody">
+                    <!-- Rows will be dynamically inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const logInput = document.getElementById('log-input');
+            const parseLogsBtn = document.getElementById('parse-logs-btn');
+            const exportCsvBtn = document.getElementById('export-csv-btn');
+            const thresholdInput = document.getElementById('threshold');
+            const applyBtn = document.getElementById('apply-btn');
+            const clearAllBtn = document.getElementById('clear-all-btn');
+            const resultsTbody = document.getElementById('results-tbody');
+            const statusFilter = document.getElementById('status-filter');
+            const hitsSort = document.getElementById('hits-sort');
+
+            const distinctEmailsStat = document.getElementById('distinct-emails-stat');
+            const confirmedOpensStat = document.getElementById('confirmed-opens-stat');
+            const openRateStat = document.getElementById('open-rate-stat');
+            const totalPixelHitsStat = document.getElementById('total-pixel-hits-stat');
+
+            let emailData = {}; // { "email@example.com": { hits: 1, timestamps: [date, ...], confirmedAt: date } }
+
+            const updateDashboard = () => {
+                const threshold = parseInt(thresholdInput.value, 10) || 1;
+                const statusFilterValue = statusFilter.value;
+                const hitsSortValue = hitsSort.value;
+                
+                // Use a document fragment for performance
+                const fragment = document.createDocumentFragment();
+                
+                let distinctEmails = 0;
+                let confirmedOpens = 0;
+                let totalPixelHits = 0;
+                let filteredEmails = [];
+
+                // First, prepare the data with status
+                const emailsWithStatus = Object.keys(emailData).map(email => {
+                    const data = emailData[email];
+                    const isConfirmed = data.hits >= threshold;
+                    if (isConfirmed && !data.confirmedAt) {
+                        data.confirmedAt = data.timestamps[threshold - 1] || data.timestamps[0];
+                    } else if (!isConfirmed) {
+                        data.confirmedAt = null;
+                    }
+                    return {
+                        email,
+                        data,
+                        isConfirmed,
+                        lastSeen: data.timestamps[data.timestamps.length - 1]
+                    };
+                });
+
+                // Apply status filter
+                let emailsToDisplay = emailsWithStatus;
+                if (statusFilterValue === 'confirmed') {
+                    emailsToDisplay = emailsWithStatus.filter(item => item.isConfirmed);
+                } else if (statusFilterValue === 'pending') {
+                    emailsToDisplay = emailsWithStatus.filter(item => !item.isConfirmed);
+                }
+
+                // Apply sorting
+                if (hitsSortValue === 'asc') {
+                    emailsToDisplay.sort((a, b) => a.data.hits - b.data.hits);
+                } else if (hitsSortValue === 'desc') {
+                    emailsToDisplay.sort((a, b) => b.data.hits - a.data.hits);
+                } else {
+                    // Normal sorting (latest first)
+                    emailsToDisplay.sort((a, b) => b.lastSeen - a.lastSeen);
+                }
+
+                // Calculate stats based on ALL data (not filtered)
+                for (const item of emailsWithStatus) {
+                    distinctEmails++;
+                    totalPixelHits += item.data.hits;
+                    if (item.isConfirmed) {
+                        confirmedOpens++;
+                    }
+                }
+
+                // Render filtered and sorted data
+                for (const item of emailsToDisplay) {
+                    const { email, data, isConfirmed } = item;
+                    const row = document.createElement('tr');
+                    
+                    const firstSeen = data.timestamps[0];
+                    const lastSeen = data.timestamps[data.timestamps.length - 1];
+
+                    row.innerHTML = `
+                        <td>${email}</td>
+                        <td><span class="status-badge ${isConfirmed ? 'status-confirmed' : 'status-pending'}">${isConfirmed ? 'CONFIRMED' : 'PENDING'}</span></td>
+                        <td>${firstSeen.toLocaleString()}</td>
+                        <td>${data.confirmedAt ? data.confirmedAt.toLocaleString() : '-'}</td>
+                        <td>${lastSeen.toLocaleString()}</td>
+                        <td><span class="hits-badge">${data.hits}</span></td>
+                        <td><button class="button btn-danger remove-btn" data-email="${email}">Remove</button></td>
+                    `;
+                    fragment.appendChild(row);
+                }
+                
+                // Efficiently update the table
+                resultsTbody.innerHTML = '';
+                resultsTbody.appendChild(fragment);
+
+                // Update stats
+                const openRate = distinctEmails > 0 ? ((confirmedOpens / distinctEmails) * 100).toFixed(0) : 0;
+                distinctEmailsStat.textContent = distinctEmails;
+                confirmedOpensStat.textContent = confirmedOpens;
+                openRateStat.textContent = `${openRate}%`;
+                totalPixelHitsStat.textContent = totalPixelHits;
+            };
+
+            const parseLogs = () => {
+                const logs = logInput.value;
+                const emailRegex = /id=([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+                const timestampRegex = /\[(.*?)\]/;
+
+                const lines = logs.split('\n');
+                lines.forEach(line => {
+                    const emailMatch = [...line.matchAll(emailRegex)];
+                    const timestampMatch = line.match(timestampRegex);
+                    
+                    if (emailMatch.length > 0 && timestampMatch) {
+                        const email = emailMatch[0][1];
+                        const timestamp = new Date(timestampMatch[1].replace(/(\d{2})\/([a-zA-Z]{3})\/(\d{4}):/, '$2 $1 $3 '));
+
+                        if (!emailData[email]) {
+                            emailData[email] = { hits: 0, timestamps: [], confirmedAt: null };
+                        }
+                        emailData[email].hits++;
+                        emailData[email].timestamps.push(timestamp);
+                        emailData[email].timestamps.sort((a,b) => a - b);
+                    }
+                });
+                updateDashboard();
+            };
+            
+            const exportToCSV = () => {
+                const threshold = parseInt(thresholdInput.value, 10) || 1;
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "Email Address,Status,First Seen,Confirmed At,Last Seen,Total Hits\n";
+
+                const sortedEmails = Object.keys(emailData).sort((a, b) => {
+                    return emailData[b].timestamps[emailData[b].timestamps.length - 1] - emailData[a].timestamps[emailData[a].timestamps.length - 1];
+                });
+
+                sortedEmails.forEach(email => {
+                    const data = emailData[email];
+                    const isConfirmed = data.hits >= threshold;
+                    const firstSeen = data.timestamps[0].toLocaleString();
+                    const lastSeen = data.timestamps[data.timestamps.length - 1].toLocaleString();
+                    const confirmedAt = data.confirmedAt ? data.confirmedAt.toLocaleString() : '-';
+                    
+                    const row = [email, isConfirmed ? 'CONFIRMED' : 'PENDING', firstSeen, confirmedAt, lastSeen, data.hits].join(",");
+                    csvContent += row + "\n";
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "email_tracking_export.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const clearAll = () => {
+                emailData = {};
+                logInput.value = '';
+                updateDashboard();
+            };
+
+            parseLogsBtn.addEventListener('click', parseLogs);
+            applyBtn.addEventListener('click', updateDashboard);
+            clearAllBtn.addEventListener('click', clearAll);
+            exportCsvBtn.addEventListener('click', exportToCSV);
+            statusFilter.addEventListener('change', updateDashboard);
+            hitsSort.addEventListener('change', updateDashboard);
+            
+            resultsTbody.addEventListener('click', (event) => {
+                if (event.target.classList.contains('remove-btn')) {
+                    const emailToRemove = event.target.dataset.email;
+                    if (emailToRemove && emailData[emailToRemove]) {
+                        delete emailData[emailToRemove];
+                        updateDashboard();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
