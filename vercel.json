@@ -1,12 +1,5 @@
 {
-  "name": "email-tracking-dashboard",
-  "version": 2,
-  "builds": [
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    }
-  ],
+  "name": "email-log",
   "rewrites": [
     {
       "source": "/",
